@@ -1,0 +1,25 @@
+{% extends 'base2.html' %}
+{% block content %} 
+<form method="post" class="sellerDisplay">
+    <h3>Enter Display Name</h3>
+    <div>
+        <label>Display Name:</label>
+        <input type="text" placeholder="Please enter Display Name" name="displayName" value="{{displayName}}"/> 
+    </div>
+    <div class="orderUpdates">
+        <input type="text" placeholder="Enter tracking number" name="trackingNumber" value="{{trackingNumber}}" />
+        <button type="submit" name="orderUpdates">Update an existing order</button>
+    </div>
+    <div class="newTracker">
+        <button type="submit" name="newTracker">Create a new tracker</button>
+    </div>
+    <!-- error handeling -->
+    {% if error%}
+        <ul>
+            <li>
+                {{error}}
+            </li>
+        </ul>
+    {% endif %}
+</form>
+{% endblock %}
