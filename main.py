@@ -1,164 +1,109 @@
-# from flask import Flask, render_template, request, session, redirect, url_for, sessions
-# from flask_socketio import join_room, leave_room, send, SocketIO
-# import random
-
-# app = Flask(__name__)
-# app.config["SECRET_KEY"] = "shopify"  # note: see if you can secure this more
-# socketio = SocketIO(app)
-
-# trackingService = {}  # store info about the order inside here
-# trackingNumberLength = 8
-
-
-# def generateTrackingNumber(length):
-#     if length <= 0:
-#         raise ValueError("Number of digits must be greater than 0")
-
-#     lowerBound = 10 ** (length - 1)  # 10^(d - 1)
-#     upperBound = (10**length) - 1  # (10^d) -1
-
-#     foundUniqueID = False  # easier readability
-#     while not foundUniqueID:
-#         trackingID = random.randint(lowerBound, upperBound)  # inclusive of both ends
-#         if trackingID not in trackingService:
-#             foundUniqueID = True
-#     return trackingID
-
-
-# @app.route(
-#     "/", methods=["POST", "GET"]
-# )  # setting up a route which is essentially the home page (decorator syntax)
-# def loginSeller():
-#     session.clear()
-#     if request.method == "POST":  # research how this get method works -> basically using a python dictionary
-#         displayName = request.form.get("displayName")
-#         trackingNumber = request.form.get("trackingNumber")
-#         orderUpdates = request.form.get(
-#             "orderUpdates", False
-#         )  # will return false bc it is a button rather than its typically ''
-#         newTracker = request.form.get("newTracker", False)
-
-#         if not displayName:
-#             return render_template(
-#                 "seller.html",
-#                 error="Please enter a display name",
-#                 displayName=displayName,
-#                 trackingNumber=trackingNumber,
-#             )  # we need to pass in the variables so that when the post request is send, it refreshes the page and whatever the user typed in is lost
-
-#         if orderUpdates != False and not trackingNumber:
-#             return render_template(
-#                 "seller.html",
-#                 error="Please enter a tracking number",
-#                 displayName=displayName,
-#                 trackingNumber=trackingNumber,
-#             )
-
-#         order = trackingNumber
-#         if newTracker != False:  # creating a new tracking order (seller)
-#             order = generateTrackingNumber(trackingNumberLength)
-#             trackingService[order] = {"members": 0, "updates": []}
-#         elif trackingNumber not in trackingService:  # join a tracking order but it does not exist
-#             return render_template(
-#                 "seller.html",
-#                 error="Order does not exist",
-#                 displayName=displayName,
-#                 trackingNumber=trackingNumber,
-#             )
-
-#         # Note: I will be changing this for a more advanced way of user authentication
-#         session["order"] = order
-#         session["displayName"] = displayName
-#         return redirect(url_for("order"))
-
-#     return render_template("seller.html")  # returns the html page
-
-
-# @app.route("/order")
-# def order():
-#     order = session.get("order")
-#     if order is None or session.get("displayName") is None or order not in trackingService:
-#         return redirect(url_for("loginSeller"))
-
-#     return render_template("order.html", code=order, messages=trackingService[order]["messages"])
-
-# @socketio.on("message")
-# def message(data):
-#     order = session.get("order")
-#     if order not in trackingService:
-#         return
-#     content = {
-#         "displayName": session.get("displayName"),
-#         "message": data["data"]
-#     }
-#     send(content, to=order)
-#     trackingService[order]["messages"].append(content)
-#     print(f"{session.get('name')} said: {data['data']}")
-
-
-# @socketio.on("connect")
-# def connect(auth):
-#     order = session.get("order")
-#     print(f" Order: {order}")
-#     displayName = session.get("displayName")
-#     if not order or not displayName:  # error handeling
-#         return
-#     if order not in trackingService:
-#         leave_room(order)
-#         return
-#     join_room(order)
-#     send({"displayName": displayName, "messages": "is now online"}, to=order)
-#     trackingService[order]["members"] += 1
-#     print(f"{displayName} has joined to see order updates {order}")
-#     print(f"order: {order}")
-#     for key, value in trackingService.items():
-#         print(f"(Key) {key}: (val) {value}")
-
-
-# @socketio.on("disconnect")
-# def disconnect():
-#     order = session.get("order")
-#     displayName = session.get("displayName")
-#     leave_room(order)
-
-#     if order in trackingService:
-#         trackingService[order]["members"] -= 1
-#         if trackingService[order]["members"] <= 0:  # might wanna handle this differently
-#             del trackingService[order]
-#     send({"displayName": displayName, "messages": "is now offline"}, to=order)
-#     print(f"{displayName} has left {order}")
-
-
-# if __name__ == "__main__":
-#     socketio.run(app, debug=True)
-
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_socketio import join_room, leave_room, send, SocketIO
+from flask_sqlalchemy import SQLAlchemy
 import random
+from datetime import timedelta
+import string
 from string import ascii_uppercase
 
+# Setup:
+
 app = Flask(__name__)
+# Sets session timeout to 30 minutes
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
 app.config["SECRET_KEY"] = "shopify"
 socketio = SocketIO(app)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
+db = SQLAlchemy(app)
 
-rooms = {}
+trackingService = {}
+trackingNumberLength = 8
 
 
-def generate_unique_code(length):
+# Models:
+
+
+class Seller(db.Model):
+    __tablename__ = "seller"
+    id = db.Column(db.Integer, nullable=False, primary_key=True)
+    email = db.Column(db.String(20), unique=True, nullable=True)
+    password = db.Column(db.String(20), unique=False, nullable=True)
+
+
+with app.app_context():
+    db.create_all()
+
+
+# Generates unique order code:
+
+
+def generateOrderCode(length):
     while True:
-        code = ""
-        for _ in range(length):
-            code += random.choice(ascii_uppercase)
-
-        if code not in rooms:
-            break
-
-    return code
+        code = "".join(random.choices(string.ascii_uppercase, k=length))
+        if code not in trackingService:
+            return code
 
 
-@app.route("/", methods=["POST", "GET"])
+@app.route("/")
 def home():
-    session.clear()
+    return render_template("landing.html")
+
+
+# For debugging:
+
+
+@app.route("/view_database")
+def view_database():
+    sellers = Seller.query.all()
+    return render_template("view_database.html", sellers=sellers)
+
+
+@app.route("/signup")
+def signup():
+    return render_template("sellerSignup.html")
+
+
+# User Authentication:
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+        user = Seller.query.filter_by(email=email).first()
+        if user and user.password == password:
+            session["email"] = email
+            return redirect(url_for("seller"))
+        else:
+            error_message = (
+                "Login failed, incorrect email or password, please try again."
+            )
+            return render_template("sellerLogin.html", error_message=error_message)
+    return render_template("sellerLogin.html")
+
+
+@app.route("/signup", methods=["POST"])
+def sellerProfile():
+    email = request.form.get("email")
+    password = request.form.get("password")
+
+    if email != "" and password != "":
+        p = Seller(email=email, password=password)
+        db.session.add(p)
+        db.session.commit()
+        return redirect("/login")
+    else:
+        return redirect("/")
+
+
+# Seller dashboard:
+
+
+@app.route("/seller", methods=["POST", "GET"])
+def seller():
+    if "email" not in session:
+        return redirect(url_for("login"))
     if request.method == "POST":
         name = request.form.get("name")
         code = request.form.get("code")
@@ -167,49 +112,99 @@ def home():
 
         if not name:
             return render_template(
-                "home.html", error="Please enter a name.", code=code, name=name
+                "seller.html", error="Please enter a name.", code=code, name=name
             )
 
         if join != False and not code:
             return render_template(
-                "home.html", error="Please enter a order code.", code=code, name=name
+                "seller.html", error="Please enter a order code.", code=code, name=name
             )
 
         order = code
         if create != False:
-            order = generate_unique_code(4)
-            rooms[order] = {"members": 0, "messages": []}
-        elif code not in rooms:
+            order = generateOrderCode(trackingNumberLength)
+            trackingService[order] = {"members": 0, "messages": []}
+        elif code not in trackingService:
             return render_template(
-                "home.html", error="Room does not exist.", code=code, name=name
+                "seller.html", error="Order does not exist.", code=code, name=name
             )
 
         session["order"] = order
         session["name"] = name
         return redirect(url_for("order"))
 
-    return render_template("home.html")
+    return render_template("seller.html")
+
+
+# For buyers
+
+
+@app.route("/buyerLogin", methods=["POST", "GET"])
+def buyer():
+    if request.method == "POST":
+        name = request.form.get("name")
+        code = request.form.get("code")
+        join = request.form.get("join", False)
+
+        if not name:
+            return render_template(
+                "buyerDashboard.html",
+                error="Please enter a name.",
+                code=code,
+                name=name,
+            )
+
+        if join != False and not code:
+            return render_template(
+                "buyerDashboard.html",
+                error="Please enter a order code.",
+                code=code,
+                name=name,
+            )
+
+        order = code
+        if code not in trackingService:
+            return render_template(
+                "buyerDashboard.html",
+                error="Order does not exist.",
+                code=code,
+                name=name,
+            )
+
+        session["order"] = order
+        session["name"] = name
+        return redirect(url_for("order"))
+
+    return render_template("buyerDashboard.html")
+
+
+# Websockets
 
 
 @app.route("/order")
 def order():
     order = session.get("order")
-    if order is None or session.get("name") is None or order not in rooms:
-        return redirect(url_for("home"))
+    if order is None or session.get("name") is None or order not in trackingService:
+        return redirect(url_for("seller"))
 
-    return render_template("order.html", code=order, messages=rooms[order]["messages"])
+    return render_template(
+        "order.html", code=order, messages=trackingService[order]["messages"]
+    )
 
 
 @socketio.on("message")
 def message(data):
     order = session.get("order")
-    if order not in rooms:
+    if order not in trackingService:
         return
 
     content = {"name": session.get("name"), "message": data["data"]}
     send(content, to=order)
-    rooms[order]["messages"].append(content)
+    trackingService[order]["messages"].append(content)
     print(f"{session.get('name')} said: {data['data']}")
+
+
+# Websockets connectivity
 
 
 @socketio.on("connect")
@@ -218,13 +213,13 @@ def connect(auth):
     name = session.get("name")
     if not order or not name:
         return
-    if order not in rooms:
+    if order not in trackingService:
         leave_room(order)
         return
 
     join_room(order)
-    send({"name": name, "message": "has entered the order"}, to=order)
-    rooms[order]["members"] += 1
+    send({"name": name, "message": "has entered the conversation"}, to=order)
+    trackingService[order]["members"] += 1
     print(f"{name} joined order {order}")
 
 
@@ -234,13 +229,12 @@ def disconnect():
     name = session.get("name")
     leave_room(order)
 
-    if order in rooms:
-        rooms[order]["members"] -= 1
-        if rooms[order]["members"] <= 0:
-            del rooms[order]
+    if order in trackingService:
+        trackingService[order]["members"] -= 1
+        if trackingService[order]["members"] <= 0:
+            del trackingService[order]
 
-    send({"name": name, "message": "has left the order"}, to=order)
-    print(f"{name} has left the order {order}")
+    send({"name": name, "message": "has left the conversation"}, to=order)
 
 
 if __name__ == "__main__":

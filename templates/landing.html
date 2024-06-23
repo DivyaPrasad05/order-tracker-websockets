@@ -1,11 +1,22 @@
 {% extends 'base.html'%} {% block content %}
 
-<form method="post" class="buttons">
-    <div class="button">
-        <button type="submit" name="seller" class="seller-btn">Seller</button>
-        <button type="submit" name="buyer" class="buyer-btn">Buyer</button>
+<div class="landing">
+    <div class="title-container">
+        <h3>Welcome to the Realtime Customer Support System! Please indicate whether you are a seller or a buyer</h3>
     </div>
 
-</form>
+    <form method="post" class="buttons-form">
+        <div class="button-container">
+            <a href="{{ url_for('login') }}" style="text-decoration: none;">
+                <button type="button">Seller</button>
+            </a>
+            <a href="{{ url_for('buyer') }}" style="text-decoration: none;">
+                <button type="button">Buyer</button>
+            </a>
+
+        </div>
+
+    </form>
+</div>
 
 {% endblock %}

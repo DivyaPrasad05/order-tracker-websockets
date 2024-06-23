@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>View Database</title>
+</head>
+
+<body>
+    <h1>Database Contents</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Password</th>
+        </tr>
+        {% for seller in sellers %}
+        <tr>
+            <td>{{ seller.id }}</td>
+            <td>{{ seller.email }}</td>
+            <td>{{ seller.password }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+
+</html>
