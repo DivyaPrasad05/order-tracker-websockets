@@ -1,0 +1,115 @@
+.content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sellerDisplay {
+    flex-direction: column;
+    display: flex;
+    gap: calc(20px + 10%);
+    align-items: center;
+    justify-content: center;
+}
+
+.orderUpdates {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.newTracker {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.message-box {
+    border-color: black;
+    border-width: 6px;
+    border-style: solid;
+    background-color: #7ba5ed;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    width: 80vw;
+    align-items: stretch;
+}
+
+.messages {
+    overflow-y: scroll;
+    flex: 1;
+    width: 100%;
+}
+
+.inputs {
+    padding: 10px;
+    display: flex;
+}
+
+h3,
+h5 {
+    text-align: center;
+}
+
+#messages {
+    flex: 1;
+}
+
+.text {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.signup-btn {
+    padding-top: 100px;
+}
+
+.loginContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    height: 100vh;
+}
+
+
+.signup-btn {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.signup-btn button {
+    margin-top: 10px;
+}
+
+
+.landing {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    height: 100vh;
+}
+
+.title-container {
+    padding: 20px;
+    text-align: center;
+}
+
+.buttons-form {
+    margin-top: 20px;
+}
+
+.button-container {
+    display: flex;
+    gap: 20px;
+}
+
+.loginFields {
+    padding-top: 20%;
+}

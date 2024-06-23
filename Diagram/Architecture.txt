@@ -1,0 +1,24 @@
+
+	Seller (Client 1):																									Buyer (Client 2):
+	
+			O		(Bi-directional Communication)	       **********				(Bi-directional Communication)				O
+	       /|\		<----------------------------->	       * Server *			  <-------------------------------------->	   /|\
+	       / \					      					   **********					      						   		   / \
+					[open and persistent communication]								[open and persistent communication]
+			|
+			|
+			|
+			|
+			|
+			|
+			|
+			|
+	+---------------------+
+	|      Sellers (DB)   |
+	+---------------------+				
+	| ID (Primary Key)    |
+	| Email               |
+	| Password            |
+	+---------------------+
+
+
