@@ -29,10 +29,5 @@ This project is an order tracker that utilizes websockets for real-time updates.
 4. Run python main.py to start the development server.
 5. Open your browser and go to http://127.0.0.1:5000.
 
-## Picture Demos:
-![Image1](<Screen Shot 2024-06-23 at 5.54.15 PM.png>)
-![Image2](<Screen Shot 2024-06-23 at 5.55.57 PM.png>)
-![Image3](<Screen Shot 2024-06-23 at 5.56.59 PM.png>)
-![Image4](<Screen Shot 2024-06-23 at 5.58.17 PM.png>)
 
 
